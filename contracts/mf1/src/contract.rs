@@ -12,8 +12,8 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
     CHAIN_ID.save(deps.storage, &msg.chain_id)?;
-    PENDING_TX_LIST.save(deps.storage, &Vec::new());
-    EXPECTED_TX_ID.save(deps.storage, &1);
+    PENDING_TX_LIST.save(deps.storage, &Vec::new())?;
+    EXPECTED_TX_ID.save(deps.storage, &1)?;
     FUTURE_MAP.save(deps.storage, 0b0, &Some(msg.original_value))?;
     Ok(Response::new()
     .add_attribute("method", "instantiate")
@@ -26,31 +26,16 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     use QueryMsg::*;
 
     match msg {
-        Greet {} => to_json_binary(&query::greet()?),
-        PendingListLength {} => to_json_binary(&query::pending_list_length(deps)?),
         AllFutures{} => to_json_binary(&query::all_futures(deps)?),
+        ListInfo{} => to_json_binary(&query::list_info(deps)?),
     }
 }
 
 mod query {
-    use crate::msg::{GreetResp, PendingListLengthResp, AllFuturesResp};
+    use crate::msg::{AllFuturesResp, ListInfoResp};
     use crate::utils;
 
     use super::*;
-
-    pub fn greet() -> StdResult<GreetResp> {
-        let resp = GreetResp {
-            message: "Hello World".to_owned(),
-        };
-
-        Ok(resp)
-    }
-
-    pub fn pending_list_length(deps: Deps) -> StdResult<PendingListLengthResp> {
-        utils::calculate_pending_list_len(deps).map(|len| {
-            PendingListLengthResp{ len }
-        })
-    }
 
     pub fn all_futures(deps: Deps) -> StdResult<AllFuturesResp> {
         let futures = FUTURE_MAP
@@ -65,6 +50,13 @@ mod query {
         .collect::<StdResult<Vec<(String, String)>>>()?;
 
         Ok(AllFuturesResp{ futures })
+    }
+
+    pub fn list_info(deps: Deps) -> StdResult<ListInfoResp> {
+        let pending_txs = PENDING_TX_LIST.load(deps.storage)?;
+        let expected_tx = EXPECTED_TX_ID.load(deps.storage)?;
+
+        Ok(ListInfoResp { pending_txs, expected_tx})
     }
 }
 
@@ -84,9 +76,7 @@ pub fn execute(
 }
 
 mod exec {
-    use std::{fs::read, future::Future};
-
-    use crate::{error::ContractError, msg::{FcrossTx, TxInfo}, utils};
+    use crate::{error::ContractError, msg::{FcrossTx, TxInfo}, state::MAX_PENDING_LEN, utils};
 
     use super::*;
     use crate::msg::Operation;
@@ -105,6 +95,9 @@ mod exec {
             0 => 0,
             _ => expected-pending[0],
         };
+        if len>MAX_PENDING_LEN{
+            return Err(ContractError::UpperBound { max_length: MAX_PENDING_LEN })
+        }
         EXPECTED_TX_ID.save(deps.storage, &(expected+1))?;
         pending.push(expected);
         PENDING_TX_LIST.save(deps.storage, &pending)?;
@@ -217,7 +210,7 @@ mod exec {
             .collect::<StdResult<Vec<(u32, Option<_>)>>>()?;
             
             // delete existing kv pairs
-            let old_keys = FUTURE_MAP
+            FUTURE_MAP
             .keys(deps.storage, None, None, cosmwasm_std::Order::Ascending)
             .collect::<StdResult<Vec<u32>>>()?
             .iter()

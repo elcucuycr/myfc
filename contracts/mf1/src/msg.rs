@@ -37,26 +37,20 @@ pub struct TxInfo{
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-    #[returns(GreetResp)]
-    Greet {},
     #[returns(AllFuturesResp)]
     AllFutures {},
-    #[returns(PendingListLengthResp)]
-    PendingListLength {},
-}
-
-#[cw_serde]
-pub struct GreetResp {
-    pub message: String,
-}
-
-#[cw_serde]
-pub struct PendingListLengthResp {
-    pub len: u32,
+    #[returns(ListInfoResp)]
+    ListInfo {},
 }
 
 #[cw_serde]
 pub struct AllFuturesResp {
     pub futures: Vec<(String, String)>,
+}
+
+#[cw_serde]
+pub struct ListInfoResp {
+    pub pending_txs: Vec<u32>,
+    pub expected_tx: u32,
 }
 

@@ -7,3 +7,5 @@ pub const PENDING_TX_LIST: Item<Vec<u32>> = Item::new("pending_tx_list");
 pub const EXPECTED_TX_ID: Item<u32> = Item::new("expected_tx_id");
 
 pub const FUTURE_MAP: Map<u32, Option<i64>> = Map::new("future_map");
+
+pub const MAX_PENDING_LEN: u32 = 12;

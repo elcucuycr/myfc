@@ -17,7 +17,10 @@ pub enum ContractError {
         sent_id: u32,
         expected_id: Vec<u32>,
     },
-
+    #[error("reach maximum pending transaction length {max_length}")]
+    UpperBound{
+        max_length: u32,
+    },
     
     #[error("{sender} is not contract admin")]
     Unauthorized { sender: Addr },
