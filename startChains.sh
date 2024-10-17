@@ -2,27 +2,57 @@
 set -x
 set -e
 
-deploySmartContract() {
+deployTestSmartContract() {
   contractName=mycontract
-  smartContractDir=$SCRIPTDIR/contracts/$contractName
-  
+  # these msg should be included in "" when called to prevent being split
+  initMsg='{"admins": ["wasm1rcweqkrqswyaudxy5v7gsa5mygyfdhtsvhk5r2"], "donation_denom": "lala"}'
+  queryMsg='{ "admins_list": {} }'
 
+  smartContractDir=$SCRIPTDIR/contracts/$contractName
   cd $smartContractDir
-  RUSTFLAGS='-C link-arg=-s' cargo build --target wasm32-unknown-unknown --release --lib
+  RUSTFLAGS='-C link-arg=-s' cargo +1.69.0 build --target wasm32-unknown-unknown --release --lib
   cd -
 
+  # deploy smart contract per chain
   for((i=0;i<$1;i++)); do
-    # per chain
+    # contract
     homeFlag="--home $WASMD_DATA/ibc-$i"
     rpcFlag="--node http://127.0.0.1:2655$i"
+    gasFlag='--gas-prices 0.025stake --gas 20000000 --gas-adjustment 1.1'
     wasmBinary="$smartContractDir/target/wasm32-unknown-unknown/release/$contractName.wasm"
     wasmd $homeFlag tx wasm store $wasmBinary $rpcFlag --from user --chain-id ibc-$i --gas-prices "0.025stake" --gas "20000000" --broadcast-mode block -y --keyring-backend test
     codeId=$(wasmd $homeFlag query wasm list-code $rpcFlag --output json | jq -r ".code_infos[-1] | .code_id")
-    initMsg='{"admins": ["wasm1rcweqkrqswyaudxy5v7gsa5mygyfdhtsvhk5r2"], "donation_denom": "lala"}'
-    wasmd $homeFlag tx wasm instantiate $codeId "$initMsg" $rpcFlag --from user --chain-id ibc-$i $GAS_FLAG --broadcast-mode block -y --keyring-backend test --label "hello" --no-admin
+    wasmd $homeFlag tx wasm instantiate $codeId "$initMsg" $rpcFlag --from user --chain-id ibc-$i $gasFlag --broadcast-mode block -y --keyring-backend test --label "hello" --no-admin
     # query the contract instance address
     contractAddr=$(wasmd $homeFlag query wasm list-contract-by-code $codeId $rpcFlag --output json | jq -r '.contracts[-1]')
-    queryMsg='{ "admins_list": {} }'
+    wasmd $homeFlag query wasm contract-state smart $contractAddr "$queryMsg" $rpcFlag
+  done
+}
+
+deployMf1() {
+  contractName=mf1
+  initMsg='{"chain_id": 0, "original_value": 20}'
+  execMsg='{"execute_tx":{"fcross_tx":{"tx_id":1,"operation":{"debit_balance":{"amount":7}}}}}'
+  queryMsg='{ "all_futures": {} }'
+
+  smartContractDir=$SCRIPTDIR/contracts/$contractName
+  cd $smartContractDir
+  RUSTFLAGS='-C link-arg=-s' cargo +1.69.0 build --target wasm32-unknown-unknown --release --lib
+  cd -
+
+  # deploy smart contract per chain
+  for((i=0;i<$1;i++)); do
+    # contract
+    homeFlag="--home $WASMD_DATA/ibc-$i"
+    rpcFlag="--node http://127.0.0.1:2655$i"
+    gasFlag='--gas-prices 0.025stake --gas 20000000 --gas-adjustment 1.1'
+    wasmBinary="$smartContractDir/target/wasm32-unknown-unknown/release/$contractName.wasm"
+    wasmd $homeFlag tx wasm store $wasmBinary $rpcFlag --from user --chain-id ibc-$i --gas-prices "0.025stake" --gas "20000000" --broadcast-mode block -y --keyring-backend test
+    codeId=$(wasmd $homeFlag query wasm list-code $rpcFlag --output json | jq -r ".code_infos[-1] | .code_id")
+    wasmd $homeFlag tx wasm instantiate $codeId "$initMsg" $rpcFlag --from user --chain-id ibc-$i $gasFlag --broadcast-mode block -y --keyring-backend test --label "hello" --no-admin
+    # query the contract instance address
+    contractAddr=$(wasmd $homeFlag query wasm list-contract-by-code $codeId $rpcFlag --output json | jq -r '.contracts[-1]')
+    wasmd $homeFlag tx wasm execute $contractAddr "$execMsg" $gasFlag $rpcFlag --chain-id ibc-$i --from user --broadcast-mode block -y --keyring-backend test
     wasmd $homeFlag query wasm contract-state smart $contractAddr "$queryMsg" $rpcFlag
   done
 }
@@ -38,7 +68,6 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 WASMD_DATA="${SCRIPTDIR}/data"
 RELAYER_HOME="${SCRIPTDIR}/rly_data"
 # RELAYER_HOME="$HOME/.relayer"
-GAS_FLAG='--gas-prices 0.025stake --gas 20000000 --gas-adjustment 1.1'
 
 # preparation
 if ! [ -x "$(which wasmd)" ]; then
@@ -90,8 +119,7 @@ echo "config rly done!"
 
 sleep 1 # wait for rpc service to work
 echo "deploying smart contract..."
-# chainNum and contract directory
-deploySmartContract $chainNum
+deployMf1 $chainNum
 echo "deploy smart contract done!"
 sleep 2
 
