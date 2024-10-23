@@ -1,4 +1,4 @@
-use cosmwasm_std::{Deps, StdResult};
+use cosmwasm_std::{Deps, StdResult, Env, IbcTimeout};
 
 use crate::state::{EXPECTED_TX_ID, PENDING_TX_LIST};
 
@@ -24,4 +24,9 @@ pub fn keys_format(ks: &Vec<u32>) -> String {
     .map(|&i| format!("{:b}", i).chars().rev().collect())
     .collect::<Vec<String>>()
     .join(",")
+}
+
+pub fn get_timeout(env: &Env) -> IbcTimeout {
+    let timeout = env.block.time.plus_seconds(3600000);
+    IbcTimeout::with_timestamp(timeout)
 }

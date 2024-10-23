@@ -27,27 +27,18 @@ coins="100000000000stake,100000000000samoleans"
 delegate="100000000000stake"
 
 $BINARY --home $CHAINHOME --chain-id $CHAINID init $CHAINID
-sleep 1
 # Derive a new private key and encrypt to disk: wasmd keys add <name> [flags]
 $BINARY --home $CHAINHOME keys add validator $KEYRING --output json > $CHAINHOME/validator_seed.json 2>&1
-sleep 1
 $BINARY --home $CHAINHOME keys add user $KEYRING --output json > $CHAINHOME/key_seed.json 2>&1
-sleep 1
 $BINARY --home $CHAINHOME keys add testkey $KEYRING --output json > $CHAINHOME/testkey_seed.json 2>&1
-sleep 1
 # Add a genesis account to genesis.json: wasmd add-genesis-account [address_or_key_name] [coin][,[coin]] [flags]
 $BINARY --home $CHAINHOME add-genesis-account $($BINARY --home $CHAINHOME keys $KEYRING show user -a) $coins
-sleep 1
 $BINARY --home $CHAINHOME add-genesis-account $($BINARY --home $CHAINHOME keys $KEYRING show validator -a) $coins 
-sleep 1
 $BINARY --home $CHAINHOME add-genesis-account $($BINARY --home $CHAINHOME keys $KEYRING show testkey -a) $coins 
-sleep 1
 # Generate a genesis transaction that creates a validator with a self-delegation: wasmd gentx my-key-name 1000000stake ...
 $BINARY --home $CHAINHOME gentx validator $delegate $KEYRING --chain-id $CHAINID
-sleep 1
 # Collect genesis txs and output a genesis.json file
 $BINARY --home $CHAINHOME collect-gentxs
-sleep 1
 
 # Set proper defaults and change ports (use a different sed for Mac or Linux)
 echo "Change settings in config.toml file..."

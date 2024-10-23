@@ -8,7 +8,6 @@ pub mod contract;
 pub mod msg;
 pub mod state;
 pub mod error;
-pub mod utils;
 pub mod ibc;
 
 #[cfg_attr(not(feature = "library"), entry_point)]

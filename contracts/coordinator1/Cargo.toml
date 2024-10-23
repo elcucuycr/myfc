@@ -1,5 +1,5 @@
 [package]
-name = "mf1"
+name = "coordinator1"
 version = "0.1.0"
 edition = "2021"
 

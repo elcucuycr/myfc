@@ -1,4 +1,4 @@
-use mf1::msg::*;
+use coordinator1::msg::*;
 use cosmwasm_schema::write_api;
 
 fn main() {
@@ -9,18 +9,13 @@ fn main() {
     }
 
     // generate a valid json
-    let msg = ExecuteMsg::ExecuteTx {
-        fcross_tx: FcrossTx {
-            tx_id: 1,
-            operation: Operation::CreditBalance { amount: 100 },
-        },
+    // let msg = ExecuteMsg::AddVote { vote: Vote { tx_id: 1, chain_id: 2, success: true } };
+    let msg = InstantiateMsg{
+        chain_num: 3,
     };
     let json = serde_json::to_string(&msg).unwrap();
     println!("{}", json);
-    let msg2 = QueryMsg::MyLogs {  };
+    let msg2 = ExecuteMsg::AddVote { vote: Vote { tx_id: 2, chain_id: 1, success: true } };
     let json2 = serde_json::to_string(&msg2).unwrap();
     println!("{}", json2);
-    let msg3 = QueryMsg::Multifuture { tx_id: 1 };
-    let json3 = serde_json::to_string(&msg3).unwrap();
-    println!("{}", json3);
 }

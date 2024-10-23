@@ -1,4 +1,3 @@
-use cosmwasm_std::{Addr};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
 /* Initiate */
@@ -12,7 +11,7 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     ExecuteTx { fcross_tx: FcrossTx },
-    FinalizeTx { tx_info: TxInfo },
+    FinalizeTx { instruction: Instruction },
 }
 
 #[cw_serde]
@@ -28,29 +27,35 @@ pub enum Operation {
 }
 
 #[cw_serde]
-pub struct TxInfo{
+pub struct Instruction{
     pub tx_id: u32,
-    pub committed: bool,
+    pub commitment: bool,
 }
 
 /* Query */
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-    #[returns(AllFuturesResp)]
-    AllFutures {},
-    #[returns(ListInfoResp)]
-    ListInfo {},
+    #[returns(MultifutureResp)]
+    Multifuture { tx_id: u32 },
+    #[returns(MyLogsResp)]
+    MyLogs{},
 }
 
 #[cw_serde]
-pub struct AllFuturesResp {
-    pub futures: Vec<(String, String)>,
+pub struct MultifutureResp {
+    pub futures: Vec<String>,
 }
 
 #[cw_serde]
-pub struct ListInfoResp {
-    pub pending_txs: Vec<u32>,
-    pub expected_tx: u32,
+pub struct MyLogsResp {
+    pub logs: String,
+}
+
+#[cw_serde]
+pub struct Vote{
+    pub tx_id: u32,
+    pub chain_id: u16,
+    pub success: bool,
 }
 
